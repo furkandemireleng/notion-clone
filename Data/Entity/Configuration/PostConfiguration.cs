@@ -22,12 +22,16 @@ namespace notion_clone.Data.Entity.Configuration
             builder.Property(t => t.Title)
                 .IsRequired()
                 .HasMaxLength(255);
-            
+
 
             builder.Property(t => t.CreatedAt)
                 .IsRequired()
                 .HasColumnType("TIMESTAMPTZ")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            builder
+                .HasMany(p => p.Categories)
+                .WithMany(); // No need for navigation property on Category side
         }
     }
 }

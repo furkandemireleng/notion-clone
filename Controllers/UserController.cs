@@ -16,7 +16,7 @@ using notion_clone.Service;
 namespace notion_clone.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;
