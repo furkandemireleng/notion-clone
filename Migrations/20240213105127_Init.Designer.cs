@@ -12,8 +12,8 @@ using notion_clone.Data;
 namespace notion_clone.Migrations
 {
     [DbContext(typeof(NotionCloneDbContext))]
-    [Migration("20240208152917_Initial")]
-    partial class Initial
+    [Migration("20240213105127_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,21 +24,6 @@ namespace notion_clone.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("CategoryEntityPostEntity", b =>
-                {
-                    b.Property<Guid>("CategoriesId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PostEntityId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("CategoriesId", "PostEntityId");
-
-                    b.HasIndex("PostEntityId");
-
-                    b.ToTable("CategoryEntityPostEntity");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
@@ -284,10 +269,15 @@ namespace notion_clone.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<Guid?>("PostEntityId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("PostEntityId");
 
                     b.ToTable("Category", (string)null);
                 });
@@ -350,21 +340,6 @@ namespace notion_clone.Migrations
                     b.ToTable("RefreshToken", (string)null);
                 });
 
-            modelBuilder.Entity("CategoryEntityPostEntity", b =>
-                {
-                    b.HasOne("notion_clone.Data.Entity.Model.CategoryEntity", null)
-                        .WithMany()
-                        .HasForeignKey("CategoriesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("notion_clone.Data.Entity.Model.PostEntity", null)
-                        .WithMany()
-                        .HasForeignKey("PostEntityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("notion_clone.Data.Entity.ApplicationRole", null)
@@ -420,6 +395,13 @@ namespace notion_clone.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("notion_clone.Data.Entity.Model.CategoryEntity", b =>
+                {
+                    b.HasOne("notion_clone.Data.Entity.Model.PostEntity", null)
+                        .WithMany("Categories")
+                        .HasForeignKey("PostEntityId");
+                });
+
             modelBuilder.Entity("notion_clone.Data.Entity.Model.PostEntity", b =>
                 {
                     b.HasOne("notion_clone.Data.Entity.ApplicationUser", "User")
@@ -452,6 +434,11 @@ namespace notion_clone.Migrations
                     b.Navigation("Tokens");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("notion_clone.Data.Entity.Model.PostEntity", b =>
+                {
+                    b.Navigation("Categories");
                 });
 #pragma warning restore 612, 618
         }

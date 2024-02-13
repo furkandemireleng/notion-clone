@@ -10,7 +10,7 @@ public class PostResponseDto
     
     public string? Content { get; set; }
 
-    public List<CategoryEntity>? CategoryEntities { get; set; }
+    public List<CategoryEntity?> CategoryEntities { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 }

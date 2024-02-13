@@ -12,9 +12,7 @@ public class NotionCloneDbContext : IdentityDbContext<ApplicationUser, Applicati
     IdentityRoleClaim<string>, IdentityUserToken<string>>
 {
     public DbSet<CategoryEntity> CategoryEntities { get; set; }
-    
     public DbSet<PostEntity> PostEntities { get; set; }
-    
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
     
     public NotionCloneDbContext(DbContextOptions<NotionCloneDbContext> context) : base(context)

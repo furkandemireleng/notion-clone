@@ -36,8 +36,9 @@ public class PostService : IPostService
     public async Task<List<PostResponseDto>> GetAllPosts(string userid)
     {
         var postEntities = await dbContext.PostEntities
+            .Include(p => p.Categories) // Include the categories
             .Where(t => t.UserId == userid)
-            .OrderByDescending(t => t.CreatedAt) // Order by newest first
+            .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
         var responseDtos = postEntities.Select(t => new PostResponseDto
@@ -45,13 +46,17 @@ public class PostService : IPostService
             Id = t.Id,
             Title = t.Title,
             Content = t.Content,
-            CategoryEntities = (List<CategoryEntity>?)t.Categories,
+            CategoryEntities = t.Categories.Select(c => new CategoryEntity
+            {
+                Id = c.Id,
+                Name = c.Name,
+                CreatedAt = c.CreatedAt
+            }).ToList(),
             CreatedAt = t.CreatedAt
         }).ToList();
 
         return responseDtos;
     }
-
     public async Task<PostResponseDto> GetSelectedPost(string userid, Guid id)
     {
         var post = await dbContext.PostEntities
@@ -81,19 +86,56 @@ public class PostService : IPostService
         {
             Title = dto.Title,
             Content = dto.Content,
-            Categories = dto.CategoryEntities,
+            UserId = userId
+            //CreatedAt = DateTimeOffset.UtcNow // Assuming you want to set the creation time to the current time
         };
 
+        post.Categories = new List<CategoryEntity>(); // Initialize the Categories collection
+
+        // Check and associate existing categories or create new ones
+        foreach (var categoryDto in dto.CategoryEntities)
+        {
+            if (categoryDto != null)
+            {
+                var existingCategory = await dbContext.CategoryEntities.FirstOrDefaultAsync(c => c.Id == categoryDto.Id);
+                if (existingCategory != null)
+                {
+                    // Category already exists, associate with the post
+                    post.Categories.Add(existingCategory);
+                }
+                else
+                {
+                    // Category does not exist, create a new one and associate with the post
+                    var newCategory = new CategoryEntity
+                    {
+                        Id = categoryDto.Id,
+                        Name = categoryDto.Name,
+                        CreatedAt = categoryDto.CreatedAt
+                    };
+                    post.Categories.Add(newCategory);
+                }
+            }
+        }
 
         // Save the entity to your database
         await dbContext.PostEntities.AddAsync(post);
 
 
-        var result = await dbContext.SaveChangesAsync();
-
-        if (result == 0)
+        try
         {
-            throw new Exception();
+            var result = await dbContext.SaveChangesAsync();
+
+            if (result == 0)
+            {
+                throw new Exception("No entities were saved to the database.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log or capture the inner exception for details
+            Console.WriteLine("An error occurred while saving the entity changes:");
+            Console.WriteLine(ex.InnerException?.Message);
+            throw; // Re-throw the exception to propagate it
         }
 
         var response = new PostResponseDto
@@ -111,6 +153,7 @@ public class PostService : IPostService
     public async Task<PostResponseDto> Update(string userId, PostUpdateDto dto)
     {
         var findenPost = await dbContext.PostEntities
+            .Include(p => p.Categories) // Include categories to avoid lazy loading
             .Where(t => t.Id == dto.Id)
             .FirstOrDefaultAsync();
 
@@ -119,16 +162,38 @@ public class PostService : IPostService
             throw new Exception(); // Or return any appropriate status code indicating resource not found
         }
 
-        findenPost.Categories = dto.CategoryEntities;
         findenPost.Content = dto.Content;
         findenPost.Title = dto.Title;
 
-        dbContext.Update(findenPost);
-        var result = await dbContext.SaveChangesAsync();
+        // Clear existing categories associated with the post
+        findenPost.Categories.Clear();
 
-        if (result == 0)
+        // Add or update categories based on DTO
+        foreach (var categoryDto in dto.CategoryEntities)
         {
-            throw new Exception();
+            var category = await dbContext.CategoryEntities.FindAsync(categoryDto.Id);
+            if (category == null)
+            {
+                // Category not found, you might want to handle this case
+                // For now, let's skip adding the category
+                continue;
+            }
+
+            // Add the category to the post
+            findenPost.Categories.Add(category);
+        }
+
+        try
+        {
+            dbContext.Update(findenPost);
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            // Log or handle the exception accordingly
+            Console.WriteLine("An error occurred while saving the entity changes during update:");
+            Console.WriteLine(ex.InnerException?.Message);
+            throw; // Re-throw the exception to propagate it
         }
 
         var response = new PostResponseDto
@@ -142,6 +207,7 @@ public class PostService : IPostService
 
         return response;
     }
+
 
     public async Task DeleteById(string userId, Guid id)
     {

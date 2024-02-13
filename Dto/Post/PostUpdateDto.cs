@@ -10,5 +10,5 @@ public class PostUpdateDto
     public string? Title { get; set; }
     public string? Content { get; set; }
 
-    public List<CategoryEntity> CategoryEntities { get; set; }
+    public List<CategoryEntity?> CategoryEntities { get; set; }
 }

@@ -14,7 +14,7 @@ public class PostEntity : IEntity
     // Other properties
 
     // Navigation property for categories
-    public ICollection<CategoryEntity>? Categories { get; set; }
-
+    public List<CategoryEntity>? Categories { get; set; }
+    
     public DateTimeOffset CreatedAt { get; set; }
 }
