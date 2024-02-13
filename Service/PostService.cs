@@ -60,12 +60,13 @@ public class PostService : IPostService
     public async Task<PostResponseDto> GetSelectedPost(string userid, Guid id)
     {
         var post = await dbContext.PostEntities
-            .Where(t => t.Id == id)
+            .Include(p => p.Categories) // Include the categories
+            .Where(t => t.Id == id && t.UserId == userid) // Filter by post id and user id
             .FirstOrDefaultAsync();
 
         if (post == null)
         {
-            throw new NotFoundException(); //Nft Not Found
+            throw new NotFoundException(); // Post Not Found
         }
 
         var response = new PostResponseDto
@@ -73,12 +74,18 @@ public class PostService : IPostService
             Id = post.Id,
             Title = post.Title,
             Content = post.Content,
-            CategoryEntities = (List<CategoryEntity>?)post.Categories,
+            CategoryEntities = post.Categories.Select(c => new CategoryEntity
+            {
+                Id = c.Id,
+                Name = c.Name,
+                CreatedAt = c.CreatedAt
+            }).ToList(),
             CreatedAt = post.CreatedAt
         };
 
         return response;
     }
+
 
     public async Task<PostResponseDto> Create(string userId, PostCreateyDto dto)
     {
